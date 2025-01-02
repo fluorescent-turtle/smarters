@@ -15,7 +15,7 @@
 import math
 import random
 
-from mesa.space import MultiGrid
+from mesa.space import MultiGrid, ContinuousSpace
 from scipy.spatial import KDTree
 from Controller.random_grid import RandomGrid
 from Model.agents import (
@@ -94,7 +94,7 @@ def build_squared_isolated_area(
     e_tassel = []
     # Remove points in the corners from enclosure_tassels
     for point in enclosure_tassels:
-        for neighbor in grid.get_neighborhood(point, grid_width, grid_height):
+        for neighbor in grid.get_neighbors(point, grid_width, grid_height):
             if neighbor not in enclosure_tassels and dim_opening > 0:
                 e_tassel.append(point)
                 dim_opening -= 1
@@ -135,7 +135,7 @@ def circular_isolation(
                 if add_resource(grid, IsolatedArea(p), *p, grid_width, grid_height):
                     if any(
                             nb in enclosure_tassels
-                            for nb in grid.get_neighborhood(p, grid_width, grid_height, 1)
+                            for nb in grid.get_neighbors(p, grid_width, grid_height, 1)
                     ):
                         enclosure_tassels.append(p)
 
@@ -373,7 +373,7 @@ def add_squared_area(
 
     neighbors = []
     for tassel in blocked_area:
-        for nb in grid.get_neighborhood(tassel, moore=True, include_center=False):
+        for nb in grid.get_neighbors(tassel, include_center=False):
             if nb not in blocked_area and not is_near_opening(
                     grid, tassel, grid_width, grid_height
             ):
@@ -444,7 +444,7 @@ def is_near_opening(grid, point, grid_width, grid_height):
     :param grid_height: The height of the grid.
     :return: True if the point is near an opening, False otherwise.
     """
-    neighbors = grid.get_neighborhood(point, moore=True, include_center=False)
+    neighbors = grid.get_neighbors(point, include_center=False)
     return any(
         contains_any_resource(grid, nb, [Opening], grid_width, grid_height)
         for nb in neighbors
@@ -634,7 +634,7 @@ class DefaultRandomGrid(RandomGrid):
         self._num_blocked_circles = num_blocked_circles
         self._dim_tassel = dim_tassel
 
-        self._grid = MultiGrid(width, length, torus=False)
+        self._grid = ContinuousSpace(width, length, torus=False)
 
     def begin(self):
         """
@@ -739,7 +739,7 @@ class DefaultCreatedGrid(RandomGrid):
     def __init__(self, grid_width, grid_height, data_e, raw_shapes, dim_tassel):
         super().__init__(grid_width, grid_height)
         self.data_e = data_e
-        self.grid = MultiGrid(grid_width, grid_height, torus=False)
+        self.grid = ContinuousSpace(grid_width, grid_height, torus=False)
         self.random_corner = (-1, -1)
         self.grid_width = grid_width
         self.grid_height = grid_height

@@ -30,7 +30,7 @@ from Model.model import Simulator
 from Utils.utils import (
     load_data_from_file,
     PerimeterPairStrategy,
-    populate_perimeter_guidelines,
+    populate_perimeter_guidelines, get_contents_at_point,
 )
 
 
@@ -166,7 +166,7 @@ def process_grid_data(
 
     for x in range(grid_width):
         for y in range(grid_height):
-            external_data[x][y] = grid.get_cell_list_contents((x, y))
+            external_data[x][y] = get_contents_at_point(grid, x, y)
 
     df = pd.DataFrame(external_data)
     df = df.rename(columns={j: j * dim_tassel for j in range(grid_height)})

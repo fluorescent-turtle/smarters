@@ -29,6 +29,7 @@ from Model.agents import (
     SquaredBlockedArea,
     CircledBlockedArea,
 )
+from Utils.utils import get_contents_at_point
 
 
 class Simulator(mesa.Model):
@@ -85,18 +86,18 @@ class Simulator(mesa.Model):
 
     def initialize_grass_tassels(self):
         """Initialize the grass tassels and place them in the grid."""
-        cord_iter = self.grid.coord_iter()
-        for contents, (x, y) in cord_iter:
-            if (
-                    GrassTassel not in contents
-                    and SquaredBlockedArea not in contents
-                    and CircledBlockedArea not in contents
-            ):
-                # Place a new grass tassel if the cell is not blocked or already occupied by another grass tassel
-                pos = (x, y)
-                new_grass = GrassTassel(pos)
-                self.grass_tassels.append(new_grass)
-                self.grid.place_agent(new_grass, pos)
+        for x in range(self.grid.width):
+            for y in range(self.grid.height):
+                contents = get_contents_at_point(self.grid, x, y)
+
+                if (contents == []
+                        or (GrassTassel not in contents
+                            and SquaredBlockedArea not in contents
+                            and CircledBlockedArea not in contents)
+                ):
+                    new_grass = GrassTassel((x, y))
+                    self.grass_tassels.append(new_grass)
+                    self.grid.place_agent(new_grass, (x, y))
 
     def initialize_robot(self, robot_plugin, autonomy, base_station_pos):
         """
@@ -202,7 +203,7 @@ class Simulator(mesa.Model):
             cmap="BuGn",
             cbar_kws={"label": "Counts"},
             robust=True,
-            vmin=1,
+            vmin=0,
             vmax=maximum,
             ax=ax,
             xticklabels=reduced_xtick,

@@ -297,6 +297,21 @@ def mowing_time(speed_robot, autonomy_robot_seconds, dim_tassel, k=1):
     return total_time_seconds
 
 
+def get_contents_at_point(space, x, y, tol=1e-5):
+    try:
+        # Attempt to calculate neighbors from the given position
+        neighbors = space.get_neighbors((float(x), float(y)), 0)
+    except ValueError as e:
+        # Handle expected error when there are no agents
+        if "operands could not be broadcast together" in str(e):
+            return []  # Return an empty list if there are no neighbors
+        # For unexpected errors, re-raise the exception
+        raise
+
+    # Filter neighbors based on proximity (within the tolerance)
+    contents = [agent for agent in neighbors if abs(agent.pos[0] - x) < tol and abs(agent.pos[1] - y) < tol]
+    return contents
+
 def euclidean_distance(p1: Tuple[int, int], p2: Tuple[int, int]) -> float:
     """
     Computes the Euclidean distance between two points.
@@ -498,7 +513,7 @@ def contains_resource(
 
     # Ensure x and y are within bounds
     if 0 <= x < grid_width and 0 <= y < grid_height:
-        cell_contents = grid.get_cell_list_contents(cell)
+        cell_contents = get_contents_at_point(grid, x, y)
 
         specific_agent = next(
             (agent for agent in cell_contents if isinstance(agent, resource)), None
