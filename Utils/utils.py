@@ -667,16 +667,11 @@ def get_grass_tassel(grass_tassels, pos):
     """
     Retrieves a grass tassel at the specified position.
 
-    :param grass_tassels: A list of grass tassels.
+    :param grass_tassels: A dictionary of grass tassels keyed by position (x, y).
     :param pos: The (x, y) position to search for the tassel.
-    :return: The grass tassel at the given position, or None if not found.
+    :return: The first grass tassel at the given position, or None if not found.
     """
-    for res in grass_tassels:
-
-        if res.get() == pos:
-            return res
-
-    return None
+    return grass_tassels.get(pos, None)[0]  # Get the first tassel at the given position
 
 
 def find_central_tassel(rows: int, cols: int) -> Tuple[int, int]:

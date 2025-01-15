@@ -48,8 +48,15 @@ class MovementPlugin:
         pass
 
     @abstractmethod
-    def boing(self):
+    def bounce(self, agent):
         """
-        Make the character "boing" (bounce back) according to the rules defined by the specific subclass.
+        Make the robot "boing" (bounce back) according to the rules defined by the specific subclass.
+        """
+        pass
+
+    @abstractmethod
+    def cut(self, pos, agent):
+        """
+        Make the robot "counts" according to the rules defined by the specific subclass.
         """
         pass

@@ -14,7 +14,6 @@
 
 from mesa import Agent
 
-
 class Robot(Agent):
     """
     A Robot agent that interacts with the environment.
@@ -25,6 +24,8 @@ class Robot(Agent):
     :type model: Model
     :param robot_plugin: The robot plugin used for movement.
     :type robot_plugin: MovementPlugin
+    :param grass_tassels: Number of grass tassels to collect.
+    :type grass_tassels:
     :param autonomy: Autonomy level of the robot.
     :type autonomy: int
     :param speed: Speed of the robot.
@@ -51,23 +52,17 @@ class Robot(Agent):
     ):
         super().__init__(unique_id, model)
 
-        self.robot_plugin = robot_plugin  # Plugin used for movement
-        self.grass_tassels = grass_tassels  # Number of grass tassels to collect
-        self.autonomy = autonomy  # Autonomy level of the robot
-
+        self.robot_plugin = robot_plugin
+        self.grass_tassels = grass_tassels
+        self.autonomy = autonomy
         self.cycles = cycles
-
         self.base_station = base_station
-        self.speed = speed  # Speed of the robot
+        self.speed = speed
         self.shear_load = shear_load
-
-        self.visited_positions = []
         self.aux_autonomy = autonomy
-
         self.first = True
-        self.dir = None
 
-        self.end = False
+        self.dir = None
         self.path_taken = set()
 
     def step(self):
@@ -98,57 +93,44 @@ class Robot(Agent):
         self.first = False
 
     def decrease_cycles(self, param):
-        self.cycles -= param
+        """
+        Decrease the number of cycles of the robot.
 
+        :param param: Amount to decrease the cycles.
+        :type param: int
+        """
+        self.cycles -= param
 
 class GrassTassel:
     """
     A GrassTassel agent that represents a single grass tassel.
 
     :param pos: Position of the grass tassel.
+    :type pos: tuple or list
     """
 
     def __init__(self, pos):
-        self.cut = -1  # Number of times the grass tassel has been cut
-        self.pos = pos  # Position of the grass tassel
+        self.counts = -1
+        self.pos = pos
 
     @property
     def unique_id(self):
+        """
+        Return the unique identifier for the grass tassel.
+
+        :return: Unique identifier.
+        :rtype: int
+        """
         return id(self)
 
     def increment(self):
         """
-        Increment the cut count.
+        Increment the counts of the grass tassel.
         """
-        if self.cut == -1:
-            self.cut = 1
+        if self.counts == -1:
+            self.counts = 1
         else:
-            self.cut += 1
-
-    def get_counts(self):
-        """
-        Get the number of times the grass tassel has been cut.
-
-        :return: Cut count.
-        :rtype: int
-        """
-        return self.cut
-
-    def get(self):
-        """
-        Get the position of the grass tassel.
-
-        :return: Position of the grass tassel.
-        :rtype: tuple or list
-        """
-        return self.pos
-
-    def clear(self):
-        """
-        Clear the position of the grass tassel.
-        """
-        self.pos = None
-
+            self.counts += 1
 
 class IsolatedArea:
     """
@@ -163,17 +145,13 @@ class IsolatedArea:
 
     @property
     def unique_id(self):
+        """
+        Return the unique identifier for the isolated area.
+
+        :return: Unique identifier.
+        :rtype: int
+        """
         return id(self)
-
-    def get(self):
-        """
-        Get the position of the isolated area.
-
-        :return: Position of the isolated area.
-        :rtype: tuple or list
-        """
-        return self.pos
-
 
 class Opening:
     """
@@ -186,49 +164,36 @@ class Opening:
     def __init__(self, pos):
         self.pos = pos
 
-    def get(self):
-        """
-        Get the position of the opening.
-
-        :return: Position of the opening.
-        :rtype: tuple or list
-        """
-        return self.pos
-
     @property
     def unique_id(self):
-        return id(self)
+        """
+        Return the unique identifier for the opening.
 
+        :return: Unique identifier.
+        :rtype: int
+        """
+        return id(self)
 
 class BaseStation:
     """
     Represents a base station where robots can recharge.
 
     :param pos: Position of the base station.
+    :type pos: tuple or list
     """
 
     def __init__(self, pos):
         self.pos = pos
 
-    def get(self):
-        """
-        Get the position of the base station.
-
-        :return: Position of the base station.
-        :rtype: tuple or list
-        """
-        return self.pos
-
-    def clear(self):
-        """
-        Clear the position of the base station.
-        """
-        self.pos = None
-
     @property
     def unique_id(self):
-        return id(self)
+        """
+        Return the unique identifier for the base station.
 
+        :return: Unique identifier.
+        :rtype: int
+        """
+        return id(self)
 
 class SquaredBlockedArea:
     """
@@ -243,17 +208,13 @@ class SquaredBlockedArea:
 
     @property
     def unique_id(self):
+        """
+        Return the unique identifier for the blocked area.
+
+        :return: Unique identifier.
+        :rtype: int
+        """
         return id(self)
-
-    def get(self):
-        """
-        Get the position of the blocked area.
-
-        :return: Position of the blocked area.
-        :rtype: tuple or list
-        """
-        return self.pos
-
 
 class CircledBlockedArea:
     """
@@ -268,14 +229,20 @@ class CircledBlockedArea:
 
     @property
     def unique_id(self):
-        return id(self)
+        """
+        Return the unique identifier for the circular blocked area.
 
+        :return: Unique identifier.
+        :rtype: int
+        """
+        return id(self)
 
 class GuideLine:
     """
     Represents a guideline for robots to follow.
 
     :param pos: Position of the guideline.
+    :type pos: tuple or list
     """
 
     def __init__(self, pos):
@@ -283,19 +250,10 @@ class GuideLine:
 
     @property
     def unique_id(self):
+        """
+        Return the unique identifier for the guideline.
+
+        :return: Unique identifier.
+        :rtype: int
+        """
         return id(self)
-
-    def get(self):
-        """
-        Get the position of the guideline.
-
-        :return: Position of the guideline.
-        :rtype: tuple or list
-        """
-        return self.pos
-
-    def clear(self):
-        """
-        Clear the position of the guideline.
-        """
-        self.pos = None
