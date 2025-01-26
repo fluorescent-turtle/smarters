@@ -1,21 +1,20 @@
 """ Copyright 2024 Sara Grecu
 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-     https://www.apache.org/licenses/LICENSE-2.0
+    https://www.apache.org/licenses/LICENSE-2.0
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License."""
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License."""
 
 import math
 import random
-
-from mesa.space import MultiGrid, ContinuousSpace
+from mesa.space import ContinuousSpace
 from scipy.spatial import KDTree
 from Controller.random_grid import RandomGrid
 from Model.agents import (
@@ -94,7 +93,7 @@ def build_squared_isolated_area(
     e_tassel = []
     # Remove points in the corners from enclosure_tassels
     for point in enclosure_tassels:
-        for neighbor in grid.get_neighbors(point, grid_width, grid_height):
+        for neighbor in grid.get_neighbors(point, radius=1, include_center=False):
             if neighbor not in enclosure_tassels and dim_opening > 0:
                 e_tassel.append(point)
                 dim_opening -= 1
@@ -104,7 +103,6 @@ def build_squared_isolated_area(
 
     for opening in e_tassel:
         opening_new = Opening(opening)
-
         add_resource(
             grid, opening_new, opening[0], opening[1], grid_width, grid_height
         )
@@ -135,7 +133,7 @@ def circular_isolation(
                 if add_resource(grid, IsolatedArea(p), *p, grid_width, grid_height):
                     if any(
                             nb in enclosure_tassels
-                            for nb in grid.get_neighbors(p, grid_width, grid_height, 1)
+                            for nb in grid.get_neighbors(p, radius=1, include_center=False)
                     ):
                         enclosure_tassels.append(p)
 
@@ -244,7 +242,7 @@ def find_and_draw_lines(grid, neighbors, grid_width, grid_height):
         ]
 
     def neighbor_on_the_perimeter(n, perimeter_cells):
-        perimeter_set = perimeter_cells
+        perimeter_set = set(perimeter_cells)
         return any(neighbor in perimeter_set for neighbor in n)
 
     perimeter_guidelines = find_perimeter_cells(grid_width, grid_height)
@@ -292,24 +290,24 @@ def fill_circular_blocked_area(
     :param dim_tassel: Dimension tassel.
     """
     blocked_tassels = []
-    for i in range(grid_height):  # Looping through x-coordinate range.
-        for j in range(grid_width):  # Looping through y-coordinate range.
-            dist = ((i - start_x) ** 2 + (j - start_y) ** 2) ** 0.5
-            if dist <= int(rad / dim_tassel):
-                point = (i, j)
-                new_resource = CircledBlockedArea(
-                    point
-                )  # Creating a new blocked area resource.
+    neighbors = grid.get_neighbors(pos=(start_x, start_y), include_center=True, radius=rad)
+    for neighbor in neighbors:
+        if not is_near_opening(
+                grid, (start_x, start_y), grid_width, grid_height
+        ):
+            new_resource = CircledBlockedArea(
+                neighbor
+            )  # Creating a new blocked area resource.
 
-                add_resource(
-                    grid,
-                    new_resource,
-                    point[0],
-                    point[1],
-                    grid_width,
-                    grid_height,
-                )
-                blocked_tassels.append(point)
+            add_resource(
+                grid,
+                new_resource,
+                neighbor[0],
+                neighbor[1],
+                grid_width,
+                grid_height,
+            )
+            blocked_tassels.append(neighbor)
 
     for bt in blocked_tassels:
         aux_lines(bt, grid, grid_width, grid_height)
@@ -373,7 +371,7 @@ def add_squared_area(
 
     neighbors = []
     for tassel in blocked_area:
-        for nb in grid.get_neighbors(tassel, include_center=False):
+        for nb in grid.get_neighbors(tassel, include_center=False, radius=1):
             if nb not in blocked_area and not is_near_opening(
                     grid, tassel, grid_width, grid_height
             ):
@@ -387,7 +385,7 @@ def add_squared_area(
     return blocked_area
 
 
-def aux_lines(blocked_area, grid, grid_width, grid_height):
+def aux_lines(blocked_area, grid, grid_width, grid_height):  # sourcery skip: use-named-expression
     """
     Add guideline lines around the blocked area based on its neighbors.
 
@@ -409,7 +407,7 @@ def aux_lines(blocked_area, grid, grid_width, grid_height):
             """Check if a coordinate value is inside grid bounds."""
             return -1 < h < max_val
 
-        n = []  # Initialize empty set to store unique neighbor coordinates
+        n = []  # Initialize empty list to store valid neighbor coordinates
         x, y = cell
 
         # Loop through possible relative offsets (-1, 0, 1) along both axes
@@ -444,7 +442,7 @@ def is_near_opening(grid, point, grid_width, grid_height):
     :param grid_height: The height of the grid.
     :return: True if the point is near an opening, False otherwise.
     """
-    neighbors = grid.get_neighbors(point, include_center=False)
+    neighbors = grid.get_neighbors(point, include_center=False, radius=1)
     return any(
         contains_any_resource(grid, nb, [Opening], grid_width, grid_height)
         for nb in neighbors
@@ -469,7 +467,7 @@ def generate_valid_agent_position(grid, grid_width, grid_height, max_attempts=35
         GuideLine,
     ]
     for _ in range(max_attempts):
-        x, y = (random.randint(0, grid_height), random.randint(0, grid_width))
+        x, y = (random.uniform(0, grid_width), random.uniform(0, grid_height))
 
         if (
                 within_bounds(grid_width, grid_height, (x, y))
@@ -480,7 +478,6 @@ def generate_valid_agent_position(grid, grid_width, grid_height, max_attempts=35
             grid_width,
             grid_height,
         )
-                and not is_near_opening(grid, (x, y), grid_width, grid_height)
         ):
             return x, y
     return None
@@ -789,4 +786,3 @@ class DefaultCreatedGrid(RandomGrid):
             t = (math.ceil(self.random_corner[0]), math.ceil(self.random_corner[1]))
 
         return self.grid, t, squares_rounded
-

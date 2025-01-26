@@ -21,6 +21,8 @@ import random
 from io import StringIO
 from typing import Union, Tuple, Set, List
 
+from mesa.space import ContinuousSpace
+
 from Model.agents import (
     BaseStation,
     GuideLine,
@@ -416,7 +418,7 @@ def put_station_guidelines(
 
 
 def contains_any_resource(
-        grid, pos: Tuple[int, int], resource_types: List, grid_width: int, grid_height: int
+        grid: ContinuousSpace, pos: Tuple[float, float], resource_types: List, grid_width: float, grid_height: float
 ) -> bool:
     """
     Checks if a position contains any resources from a specified list of resource types.
@@ -435,8 +437,8 @@ def contains_any_resource(
 
 
 def draw_line(
-        x1: int, y1: int, x2: int, y2: int, grid, grid_width: int, grid_height: int
-) -> Set[Tuple[int, int]]:
+        x1: float, y1: float, x2: float, y2: float, grid: ContinuousSpace, grid_width, grid_height
+) -> Set[Tuple[float, float]]:
     """
     Draws a line from one point to another on the grid, placing guidelines along the path.
 
@@ -462,8 +464,7 @@ def draw_line(
 
     while (x, y) != (x2, y2):
         if within_bounds(grid_width, grid_height, (x, y)):
-            curr_cell = grid[x][y]
-            if curr_cell is not None and not contains_any_resource(
+            if not contains_any_resource(
                 grid,
                 (x, y),
                 [
@@ -495,9 +496,8 @@ def draw_line(
 
     return cells_to_add
 
-
 def contains_resource(
-        grid, cell: Tuple[int, int], resource, grid_width: int, grid_height: int
+        grid: ContinuousSpace, cell: Tuple[float, float], resource, grid_width: float, grid_height: float
 ) -> bool:
     """
     Checks if a specific resource is present in the specified cell on the grid.
@@ -525,7 +525,6 @@ def contains_resource(
             return False
     else:
         return False
-
 
 def add_base_station(
         grid, position: Tuple[int, int], grid_width: int, grid_height: int
@@ -580,7 +579,7 @@ def set_guideline_cell(x: int, y: int, grid, grid_width: int, grid_height: int) 
         add_resource(grid, GuideLine((x, y)), x, y, grid_width, grid_height)
 
 
-def add_resource(grid, resource, x: int, y: int, grid_width: int, grid_height: int) -> bool:
+def add_resource(grid: ContinuousSpace, resource, x: float, y: float, grid_width, grid_height) -> bool:
     """
     Adds a resource to the grid at the specified position.
 
@@ -599,7 +598,7 @@ def add_resource(grid, resource, x: int, y: int, grid_width: int, grid_height: i
         return False
 
 
-def within_bounds(grid_width: int, grid_height: int, pos: Tuple[int, int]) -> bool:
+def within_bounds(grid_width: int, grid_height: int, pos) -> bool:
     """
     Checks if a position is within the bounds of the grid.
 
@@ -667,12 +666,14 @@ def get_grass_tassel(grass_tassels, pos):
     """
     Retrieves a grass tassel at the specified position.
 
-    :param grass_tassels: A dictionary of grass tassels keyed by position (x, y).
+    :param grass_tassels: A list of tuples, where each tuple is (x, y, tassel).
     :param pos: The (x, y) position to search for the tassel.
     :return: The first grass tassel at the given position, or None if not found.
     """
-    return grass_tassels.get(pos, None)[0]  # Get the first tassel at the given position
-
+    for tassel_info in grass_tassels:
+        if tassel_info.pos == pos:
+            return tassel_info
+    return None
 
 def find_central_tassel(rows: int, cols: int) -> Tuple[int, int]:
     """
