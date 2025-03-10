@@ -61,6 +61,7 @@ class DefaultMovementPlugin(MovementPlugin, ABC):
         self.boing = boing  # Set the type of bouncing behavior
         self.cut_diameter = cut_diameter  # Set the cutting diameter
         self.dim_tassel = dim_tassel  # Set the tassel dimension
+        self.is_in_isolated = False
 
     def move(self, agent):
         """
@@ -93,6 +94,7 @@ class DefaultMovementPlugin(MovementPlugin, ABC):
         if self.is_valid_real_pos(new_pos):
             discrete_pos = self.real_to_discrete(new_pos)
 
+            # Verifica se la posizione è all'interno dei limiti e non è un'area bloccata
             if (
                     within_bounds(self.grid_width, self.grid_height, discrete_pos)
                     and not contains_any_resource(
@@ -103,46 +105,74 @@ class DefaultMovementPlugin(MovementPlugin, ABC):
                 self.grid_height,
             )
             ):
-                is_in_isolated_area = contains_any_resource(
-                    self.grid, discrete_pos, [IsolatedArea], self.grid_width, self.grid_height
-                )
+                # Verifica presenza di Opening (uscita)
                 is_on_opening = contains_any_resource(
                     self.grid, discrete_pos, [Opening], self.grid_width, self.grid_height
                 )
 
-                if self.open:
-                    if is_in_isolated_area:
-                        self.grid.move_agent(agent, discrete_pos)
-                        self.pos = new_pos
-                        self.update_agent_autonomy(agent)
-                        agent.path_taken.add(self.pos)
-                        self.cut(discrete_pos, agent)
-                    elif is_on_opening:
-                        self.open = False
-                        self.grid.move_agent(agent, discrete_pos)
-                        self.pos = new_pos
-                        self.update_agent_autonomy(agent)
-                        agent.path_taken.add(self.pos)
-                        self.cut(discrete_pos, agent)
-                    else:
-                        self.open = False
-                        self.bounce(agent)
-                else:
+                # Verifica se è in un'area isolata
+                is_in_isolated_area = contains_any_resource(
+                    self.grid, discrete_pos, [IsolatedArea], self.grid_width, self.grid_height
+                )
+
+                # Se è all'interno di un'area isolata
+                if self.is_in_isolated:
+                    # Se trova un'apertura, esce dall'area isolata
                     if is_on_opening:
-                        self.open = True
-                        self.grid.move_agent(agent, discrete_pos)
-                        self.pos = new_pos
-                        self.update_agent_autonomy(agent)
-                        agent.path_taken.add(self.pos)
-                        self.cut(discrete_pos, agent)
-                    elif not is_in_isolated_area:
+                        self.is_in_isolated = False
                         self.grid.move_agent(agent, discrete_pos)
                         self.pos = new_pos
                         self.update_agent_autonomy(agent)
                         agent.path_taken.add(self.pos)
                         self.cut(discrete_pos, agent)
                     else:
-                        self.bounce(agent)
+                        # Se non c'è un'apertura, rimane nell'area isolata
+                        if is_in_isolated_area:
+                            self.grid.move_agent(agent, discrete_pos)
+                            self.pos = new_pos
+                            self.update_agent_autonomy(agent)
+                            agent.path_taken.add(self.pos)
+                            self.cut(discrete_pos, agent)
+                        else:
+                            # Se non è più nell'area isolata (caso anomalo), esce
+                            self.is_in_isolated = False
+                            self.bounce(agent)
+                else:
+                    # Se non è in un'area isolata
+                    # Può muoversi normalmente
+                    # Se si trova sull'apertura di un'area isolata, entra
+                    if is_on_opening:
+                        # Controlla se l'apertura è l'entrata di un'area isolata
+                        isolated_area = contains_any_resource(
+                            self.grid, discrete_pos, [IsolatedArea], self.grid_width, self.grid_height
+                        )
+                        if isolated_area:
+                            self.is_in_isolated = True
+                            self.grid.move_agent(agent, discrete_pos)
+                            self.pos = new_pos
+                            self.update_agent_autonomy(agent)
+                            agent.path_taken.add(self.pos)
+                            self.cut(discrete_pos, agent)
+                        else:
+                            # Se l'apertura non è un'area isolata, muovi normalmente
+                            self.grid.move_agent(agent, discrete_pos)
+                            self.pos = new_pos
+                            self.update_agent_autonomy(agent)
+                            agent.path_taken.add(self.pos)
+                            self.cut(discrete_pos, agent)
+                    else:
+                        if is_in_isolated_area:
+                            self.grid.move_agent(agent, discrete_pos)
+                            self.pos = new_pos
+                            self.update_agent_autonomy(agent)
+                            agent.path_taken.add(self.pos)
+                            self.cut(discrete_pos, agent)
+                        else:
+                            self.grid.move_agent(agent, discrete_pos)
+                            self.pos = new_pos
+                            self.update_agent_autonomy(agent)
+                            agent.path_taken.add(self.pos)
+                            self.cut(discrete_pos, agent)
             else:
                 self.bounce(agent)
         else:
@@ -273,71 +303,3 @@ class DefaultMovementPlugin(MovementPlugin, ABC):
             return discrete_pos
         else:
             return math.floor(x / self.dim_tassel), math.floor(y / self.dim_tassel)
-
-
-"""
-def random_move(self, agent):
-    dx = math.cos(self.angle) * self.dim_tassel
-    dy = math.sin(self.angle) * self.dim_tassel
-
-    new_pos = (self.pos[0] + dx, self.pos[1] + dy)
-    agent.dir = (dx, dy)
-
-    if self.is_valid_real_pos(new_pos):
-        discrete_pos = self.real_to_discrete(new_pos)
-
-        if (
-            within_bounds(self.grid_width, self.grid_height, discrete_pos)
-            and not contains_any_resource(
-                self.grid,
-                discrete_pos,
-                [CircledBlockedArea, SquaredBlockedArea],
-                self.grid_width,
-                self.grid_height,
-            )
-        ):
-            is_in_isolated_area = contains_any_resource(
-                self.grid, discrete_pos, [IsolatedArea], self.grid_width, self.grid_height
-            )
-            is_on_opening = contains_any_resource(
-                self.grid, discrete_pos, [Opening], self.grid_width, self.grid_height
-            )
-
-            if self.open:
-                if is_in_isolated_area:
-                    self.grid.move_agent(agent, discrete_pos)
-                    self.pos = new_pos
-                    self.update_agent_autonomy(agent)
-                    agent.path_taken.add(self.pos)
-                    self.cut(discrete_pos, agent)
-                elif is_on_opening:
-                    self.open = False
-                    self.grid.move_agent(agent, discrete_pos)
-                    self.pos = new_pos
-                    self.update_agent_autonomy(agent)
-                    agent.path_taken.add(self.pos)
-                    self.cut(discrete_pos, agent)
-                else:
-                    self.open = False
-                    self.bounce(agent)  
-            else:
-                if is_on_opening:
-                    self.open = True
-                    self.grid.move_agent(agent, discrete_pos)
-                    self.pos = new_pos
-                    self.update_agent_autonomy(agent)
-                    agent.path_taken.add(self.pos)
-                    self.cut(discrete_pos, agent)
-                elif not is_in_isolated_area:
-                    self.grid.move_agent(agent, discrete_pos)
-                    self.pos = new_pos
-                    self.update_agent_autonomy(agent)
-                    agent.path_taken.add(self.pos)
-                    self.cut(discrete_pos, agent)
-                else:
-                    self.bounce(agent)  
-        else:
-            self.bounce(agent)  
-    else:
-        self.bounce(agent)
-        """

@@ -310,7 +310,7 @@ def fill_circular_blocked_area(
             blocked_tassels.append(neighbor)
 
     for bt in blocked_tassels:
-        aux_lines(bt, grid, grid_width, grid_height)
+        aux_lines(bt, grid, grid_width, grid_height, dim_tassel)
 
 
 def add_squared_area(
@@ -385,11 +385,12 @@ def add_squared_area(
     return blocked_area
 
 
-def aux_lines(blocked_area, grid, grid_width, grid_height):  # sourcery skip: use-named-expression
+def aux_lines(blocked_tassel, grid, grid_width, grid_height, dim_tassel):
     """
     Add guideline lines around the blocked area based on its neighbors.
 
-    :param blocked_area: List of coordinates representing the blocked area.
+    :param dim_tassel:
+    :param blocked_tassel: Blocked area's tassel.
     :param grid: The grid to which the guidelines will be added.
     :param grid_width: The width of the grid.
     :param grid_height: The height of the grid.
@@ -424,10 +425,14 @@ def aux_lines(blocked_area, grid, grid_width, grid_height):  # sourcery skip: us
 
         return n
 
-    neighbors = get_circular_neighbors(blocked_area)
+    ns = grid.get_neighbors(blocked_tassel, radius=dim_tassel, include_center=False)
+    neighbors = []
 
-    for neighbor in neighbors:
+    for neighbor in ns:
+        neighbor = neighbor.pos
+        print("NEIGHBOR: ", neighbor)
         set_guideline_cell(neighbor[0], neighbor[1], grid, grid_width, grid_height)
+        neighbors.append(neighbor)
 
     find_and_draw_lines(grid, neighbors, grid_width, grid_height)
 
@@ -666,10 +671,11 @@ class DefaultRandomGrid(RandomGrid):
         return self._grid, random_corner, blocked_tassels
 
 
-def add_area(grid, t, tassels, opening_tassels, grid_width, grid_height):
+def add_area(grid, t, tassels, opening_tassels, grid_width, grid_height, dim_tassel):
     """
     Add areas to the grid based on the type specified.
 
+    :param dim_tassel:
     :param grid: The grid to which areas will be added.
     :param t: The type of area ("circles", "squares", or "is_area").
     :param tassels: The list of coordinates for the area.
@@ -688,7 +694,7 @@ def add_area(grid, t, tassels, opening_tassels, grid_width, grid_height):
                 grid_height,
             )
         for t in tassels:
-            aux_lines(t, grid, grid_width, grid_height)
+            aux_lines(t, grid, grid_width, grid_height, dim_tassel)
     elif t == "squares":
         for tassel in tassels:
             add_resource(
@@ -700,7 +706,7 @@ def add_area(grid, t, tassels, opening_tassels, grid_width, grid_height):
                 grid_height,
             )
         for t in tassels:
-            aux_lines(t, grid, grid_width, grid_height)
+            aux_lines(t, grid, grid_width, grid_height, dim_tassel)
     elif t == "is_area":
         for tassel in tassels:
             add_resource(
@@ -759,7 +765,7 @@ class DefaultCreatedGrid(RandomGrid):
                 x, y = (int(t[0]), int(t[1]))
                 circles_rounded.add((x, y))
 
-            add_area(self.grid, "circles", circles_rounded, [], self.grid_width, self.grid_height)
+            add_area(self.grid, "circles", circles_rounded, [], self.grid_width, self.grid_height, self.dim_tassel)
 
         squares = self.data_e["squares"]
 
@@ -767,7 +773,7 @@ class DefaultCreatedGrid(RandomGrid):
             for t in squares:
                 x, y = (int(t[0]), int(t[1]))
                 squares_rounded.append((x, y))
-            add_area(self.grid, "squares", squares_rounded, [], self.grid_width, self.grid_height)
+            add_area(self.grid, "squares", squares_rounded, [], self.grid_width, self.grid_height, self.dim_tassel)
 
         opening = self.data_e["opening"]
         isolated_area = self.data_e["isolated_area"]
@@ -781,7 +787,8 @@ class DefaultCreatedGrid(RandomGrid):
             for tassel in isolated_area:
                 x, y = (math.ceil(tassel[0]), math.ceil(tassel[1]))
                 isolated_area_rounded.add((x, y))
-            add_area(self.grid, "is_area", isolated_area_rounded, opening_rounded, self.grid_width, self.grid_height)
+            add_area(self.grid, "is_area", isolated_area_rounded, opening_rounded, self.grid_width, self.grid_height,
+                     self.dim_tassel)
             self.random_corner = random.choice(opening)
             t = (math.ceil(self.random_corner[0]), math.ceil(self.random_corner[1]))
 

@@ -162,25 +162,34 @@ def process_grid_data(
     :param dim_tassel: Dimension of each tassel.
     :param grid: The grid to process.
     """
+    # Create the matrix to hold the grid data
     external_data = [["" for _ in range(grid_height)] for _ in range(grid_width)]
 
+    # Populate the matrix with data from the grid
     for x in range(grid_width):
         for y in range(grid_height):
             external_data[x][y] = get_contents_at_point(grid, x, y)
+            # print(f"ELEMENT INSIDE XY {x} {y}: {external_data[x][y]}")
 
+    # Create a DataFrame from the external data
     df = pd.DataFrame(external_data)
+
+    # Rename columns with scaled indices based on dim_tassel
     df = df.rename(columns={j: j * dim_tassel for j in range(grid_height)})
+
+    # Insert additional columns: map index, repetition index, and x coordinates
     df.insert(0, "num_mappa", map_index)
     df.insert(1, "ripetizione", repetition_index)
-    df.insert(2, "x", [dim_tassel * i for i in range(grid_width)])
+    df.insert(2, "x", [dim_tassel * j for j in range(grid_width)])
 
+    # Define the output directory and ensure it exists
     output_dir = os.path.realpath("../smarters/View/")
-
-    # Use Path to check if the directory exists, and create it if it doesn't
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
+    # Change permissions to make sure the directory is accessible
     os.chmod(output_dir, stat.S_IRWXU)
 
+    # Save the DataFrame to CSV
     df.to_csv(os.path.join(output_dir, filename), index=False)
 
 
