@@ -107,7 +107,7 @@ def build_squared_isolated_area(
             grid, opening_new, opening[0], opening[1], grid_width, grid_height
         )
 
-    return random.choice(e_tassel)
+    return random.choice(e_tassel), enclosure_tassels
 
 
 def circular_isolation(
@@ -153,8 +153,9 @@ def circular_isolation(
                 grid_height,
             )
             dim_opening -= 1
-
-    return random.choice(enclosure_tassels)
+        return current_opening, enclosure_tassels
+    else:
+        return None, enclosure_tassels
 
 
 def initialize_isolated_area(
@@ -396,35 +397,6 @@ def aux_lines(blocked_tassel, grid, grid_width, grid_height, dim_tassel):
     :param grid_height: The height of the grid.
     """
 
-    def get_circular_neighbors(cell):
-        """
-        Get the circular neighbors of a given cell.
-
-        :param cell: The coordinate of the cell.
-        :return: A list of valid circular neighbors.
-        """
-
-        def _valid_coordinate(h, max_val):
-            """Check if a coordinate value is inside grid bounds."""
-            return -1 < h < max_val
-
-        n = []  # Initialize empty list to store valid neighbor coordinates
-        x, y = cell
-
-        # Loop through possible relative offsets (-1, 0, 1) along both axes
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                nx, ny = x + dx, y + dy
-
-                # Check if the potential neighbor is within grid boundaries and has no common tassel
-                if (
-                        _valid_coordinate(nx, grid_width)
-                        and _valid_coordinate(ny, grid_height)
-                ) and ((abs(dx) + abs(dy)) == 1):
-                    n.append((nx, ny))
-
-        return n
-
     ns = grid.get_neighbors(blocked_tassel, radius=dim_tassel, include_center=False)
     neighbors = []
 
@@ -644,7 +616,7 @@ class DefaultRandomGrid(RandomGrid):
 
         :return: A tuple containing the grid, a random corner, and a list of blocked tassels.
         """
-        random_corner = initialize_isolated_area(
+        random_corner, isolated_area_tassels = initialize_isolated_area(
             self._grid,
             self._isolated_shape,
             self._isolated_length,
@@ -668,7 +640,7 @@ class DefaultRandomGrid(RandomGrid):
             self._dim_tassel,
         )
 
-        return self._grid, random_corner, blocked_tassels
+        return self._grid, random_corner, blocked_tassels, isolated_area_tassels
 
 
 def add_area(grid, t, tassels, opening_tassels, grid_width, grid_height, dim_tassel):
@@ -792,4 +764,4 @@ class DefaultCreatedGrid(RandomGrid):
             self.random_corner = random.choice(opening)
             t = (math.ceil(self.random_corner[0]), math.ceil(self.random_corner[1]))
 
-        return self.grid, t, squares_rounded
+        return self.grid, t, squares_rounded, isolated_area

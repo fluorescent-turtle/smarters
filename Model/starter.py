@@ -30,7 +30,7 @@ from Model.model import Simulator
 from Utils.utils import (
     load_data_from_file,
     PerimeterPairStrategy,
-    populate_perimeter_guidelines, get_contents_at_point,
+    populate_perimeter_guidelines, get_contents_at_point, draw_guideline_inside_isolated_area,
 )
 
 
@@ -288,7 +288,7 @@ def run_model_with_parameters(env_plugins, robot_plugin, filename):
 
     for i in range(num_maps):
         cycle_data = []
-        grid, random_corner, biggest_area_blocked = create_grid(
+        grid, random_corner, biggest_area_blocked, isolated_area_tassels = create_grid(
             "default"
             if data_e.get("circles") is not None and not created
             else "random",
@@ -318,8 +318,11 @@ def run_model_with_parameters(env_plugins, robot_plugin, filename):
         grids = [copy.deepcopy(grid) for _ in range(3)]
 
         for j in range(repetitions):
+            sample_base_station = 0, int(grid_width / 3)
+            draw_guideline_inside_isolated_area(grid, sample_base_station, isolated_area_tassels, grid_width,
+                                                grid_height)
             # Run the experiment with the specified strategy.
-            runner(robot_plugin, grids[0], cycles, (int(grid_height / 3), 0), data_r, grid_width, grid_height, i, j,
+            runner(robot_plugin, grids[0], cycles, sample_base_station, data_r, grid_width, grid_height, i, j,
                    cycle_data, f"perimeter_model{get_current_datetime()}.csv", dim_tassel, recharge)
 
             """

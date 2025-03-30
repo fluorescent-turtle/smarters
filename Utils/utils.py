@@ -352,6 +352,7 @@ def put_station_guidelines(strategy, grid, grid_width, grid_height, random_corne
     return base_station_pos
 
 
+
 def contains_any_resource(grid, pos, resource_types, grid_width, grid_height):
     """
     Checks if a position contains any of the specified resource types.
@@ -395,7 +396,7 @@ def draw_line(x1, y1, x2, y2, grid, grid_width, grid_height):
     while (x, y) != (x2, y2):
         if within_bounds(grid_width, grid_height, (x, y)):
             if not contains_any_resource(grid, (x, y),
-                                         [CircledBlockedArea, SquaredBlockedArea, IsolatedArea, BaseStation, GuideLine],
+                                         [CircledBlockedArea, SquaredBlockedArea, IsolatedArea, BaseStation],
                                          grid_width, grid_height):
                 cells_to_add.add((x, y))
                 add_resource(grid, GuideLine((x, y)), x, y, grid_width, grid_height)
@@ -412,12 +413,52 @@ def draw_line(x1, y1, x2, y2, grid, grid_width, grid_height):
 
     if within_bounds(grid_width, grid_height, (x2, y2)):
         if not contains_any_resource(grid, (x2, y2),
-                                     [CircledBlockedArea, SquaredBlockedArea, IsolatedArea, BaseStation, GuideLine],
+                                     [CircledBlockedArea, SquaredBlockedArea, IsolatedArea, BaseStation],
                                      grid_width, grid_height):
             cells_to_add.add((x2, y2))
             add_resource(grid, GuideLine((x2, y2)), x2, y2, grid_width, grid_height)
 
     return cells_to_add
+
+
+def draw_guideline_inside_isolated_area(grid, base_station, area_tassels, grid_width, grid_height, depth_percent=0.25):
+    """
+    Force a guideline from the base station into the isolated area, ignoring cell contents.
+
+    :param grid: The grid where the guideline will be applied.
+    :param base_station: Tuple (x, y) indicating the base station position.
+    :param area_tassels: List of (x, y) coordinates representing the isolated area.
+    :param grid_width: Grid width.
+    :param grid_height: Grid height.
+    :param depth_percent: How far into the area (towards the center) the guideline should go.
+    """
+    if not area_tassels or not base_station:
+        return
+
+    # Compute center of the area
+    area_x = [t[0] for t in area_tassels]
+    area_y = [t[1] for t in area_tassels]
+    center = (sum(area_x) // len(area_x), sum(area_y) // len(area_y))
+
+    # Direction vector from base station to area center
+    dx = center[0] - base_station[0]
+    dy = center[1] - base_station[1]
+    dist = math.sqrt(dx ** 2 + dy ** 2)
+
+    # Normalize direction
+    if dist == 0:
+        return
+    ux, uy = dx / dist, dy / dist
+
+    # Steps to reach the desired depth
+    steps = int(dist * depth_percent)
+
+    # Apply guideline step by step from the base station
+    for i in range(steps + 1):
+        x = int(round(base_station[0] + ux * i))
+        y = int(round(base_station[1] + uy * i))
+        if within_bounds(grid_width, grid_height, (x, y)):
+            set_guideline_cell(x, y, grid, grid_width, grid_height)
 
 
 def contains_resource(grid, cell, resource, grid_width, grid_height):
@@ -468,7 +509,7 @@ def set_guideline_cell(x, y, grid, grid_width, grid_height):
     if not within_bounds(grid_width, grid_height, (x, y)):
         return False
 
-    blocked_areas = [CircledBlockedArea, SquaredBlockedArea, IsolatedArea, GuideLine]
+    blocked_areas = [CircledBlockedArea, SquaredBlockedArea]
 
     if not contains_any_resource(grid, (x, y), blocked_areas, grid_width, grid_height):
         add_resource(grid, GuideLine((x, y)), x, y, grid_width, grid_height)
