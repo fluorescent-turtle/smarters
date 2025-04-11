@@ -1,107 +1,132 @@
+# SMARTERS - Simulation of Mowing Agents in a Tile-based Environments with Realistic Space
+
 ## Description
 
-SMARTER is an advanced simulator for managing robots in environments represented as tile grids. It uses the Mesa framework for detailed visualization of interactions between agents and the environment. The simulator allows testing and evaluating robot performance in complex scenarios with blocked areas, isolated areas, and different bounce and cutting modes.
+**SMARTERS** is a customizable simulator for testing autonomous robot performance in complex environments. Built on the Mesa framework, it combines a **continuous space** with a **discrete tile grid**, allowing for both fine-grained motion tracking and statistical analysis of robot behavior. The simulator supports blocked zones, isolated areas, different movement and cutting models, and JSON-based environment configuration.
 
 ## Environment Representation
 
+### Dual-Space Model
+
+SMARTERS uses two parallel representations of space:
+
+- **Continuous Space** (`ContinuousSpace`): The robot moves using real coordinates, allowing smooth transitions and directional flexibility. This is the space where motion logic is computed.
+- **Discrete Grid** (`MultiGrid`): A tiled representation of the environment used for tracking visits and displaying features (e.g., grass, lines, obstacles). Each tile logs how many times the robot has passed over it.
+
+This dual-layer model allows for accurate simulation of robot behavior and robust analysis of area coverage.
+
 ### Tile Grid
 
-The simulation environment is represented as a tile grid, managed using the Mesa framework with a MultiGrid object. Each tile can contain multiple agents and resources.
-Agents and Resources
+Tiles represent discrete areas of the environment, each capable of holding multiple agents or resources:
 
-  - Agents: Mobile and interactive entities implemented as instances of the Agent class from Mesa. They interact with the environment and each other.
-  - Resources: Static elements distributed across tiles, such as grass, guiding lines, isolated areas, and openings.
+- **Agents**: Dynamic entities (e.g., robots), implemented using Mesa’s `Agent` class.
+- **Resources**: Static objects such as grass, guiding lines, isolated areas, blocked areas, and entry points.
 
-#### Tile Structure
+#### Key Resources
 
-Tiles are square and can contain various elements due to the multi-agent nature of MultiGrid. Resources include:
+- **Grass Tiles**
+- **Guiding Lines**
+- **Isolated Areas**
+- **Blocked Areas** (Square or Circular)
+- **Openings** (for controlled access to isolated areas)
 
-  - Grass tiles
-  - Guiding lines
+## Obstacle and Area Types
+
+### Blocked Areas
+
+Inaccessible zones for the robot. Defined as:
+
+- `SquaredBlockedArea`
+- `CircledBlockedArea`
+
+They represent real-world obstructions like buildings or pools and can be placed manually or generated randomly.
+
+### Isolated Areas
+
+Zones that the robot can enter only through predefined `Opening` tiles. Managed with the `IsolatedArea` class. Their size, shape, and placement can be manually configured or randomized.
+
+## Robot Behavior Models
+
+### Bounce Model
+
+Determines how the robot reacts upon hitting an obstacle:
+
+- **Ping Pong**: Reflects the direction (bounces back).
+- **Random**: Attempts upper-left movement first, falling back on other directions if blocked.
+
+### Cutting Model
+
+Represents the robot's grass-cutting logic:
+
+- The robot "cuts" by traversing tiles and incrementing a counter.
+- In **random cutting mode**, it selects a random direction and proceeds until blocked, potentially crossing multiple tiles diagonally.
+
+## Configuration
+
+### JSON Input
+
+SMARTERS uses a configuration file in JSON format. Two formats are supported:
+
+- **Structure 1**: Full configuration with:
+  - Robot specs (type, speed, cutting mode, etc.)
+  - Environment settings (dimensions, blocked area counts, etc.)
+  - Simulation parameters (tile size, number of cycles, etc.)
+
+- **Structure 2**: Grid definition using Cartesian coordinates, manually specifying:
+  - Blocked areas
   - Isolated areas
-  - Blocked Areas
   - Openings
-    
 
-#### Blocked Areas
+### Example Command
 
-Blocked areas are zones inaccessible to robots, represented by SquaredBlockedArea and CircledBlockedArea. These may include buildings, pools, or other obstructive structures. These areas can be set manually or distributed randomly.
+```bash
+python main.py --d data_file.json
+```
 
-#### Isolated Areas
+Ensure the `View/` folder is writable and the following libraries are installed: `mesa`, `pandas`, `numpy`, `matplotlib`, `seaborn`.
 
-Isolated areas are zones where robots can enter only through designated openings. Modeled with IsolatedArea and Opening, their size and position can be set manually or generated randomly.
+## Plugin Support
 
-# Customization
+SMARTERS supports modular extensions through Python-based plugins.
 
-## Bounce Model
+### Runtime Options
 
-The bounce model manages robot collisions with obstacles:
-
-  - Ping Pong: The robot reflects its movement in the opposite direction after hitting an obstacle.
-  - Random: The robot always tries to move towards the upper-left tile. If blocked, it attempts other directions.
-
-## Cutting Model
-
-The robot simulates cutting by moving across tiles and incrementing a counter. In random mode, the robot chooses a random direction and moves in a straight line, affecting adjacent tiles.
-
-## JSON Configuration
-### JSON Preparation
-
-To initialize SMARTER, a JSON file is required with one of two possible structures:
-
-  - Structure 1: A full configuration file, including robot settings, environment parameters, and simulation variables. This structure defines robot specifications (type, speed, cutting mode, etc.), grid dimensions, and simulation details such as tile size and cycle duration.
-
-  - Structure 2: Used to define the grid in Cartesian coordinates, listing the exact positions of blocked areas, isolated areas, and openings.
-
-The simulator uses these files to configure:
-  - Robot: Autonomous robot settings.
-  - Environment: Grid and blocked area settings.
-  - Simulation Variables: Cycle and repetition parameters.
-
-### Example Commands
-Run the simulator using the following command:
-
-    python main.py --d data_file.json
-
-Ensure the View folder has write permissions and dependencies such as pandas, matplotlib, seaborn, numpy, and mesa are installed.
-
-## Plugins
-
-SMARTER allows functionality extension through plugins, which must be Python files. Plugins are specified during runtime using the following flags:
-
-    --e: Environment plugin.
-    --r: Robot plugin.
-    --d: JSON configuration file.
+- `--e`: Environment plugin (e.g., `environment_plugin.py`)
+- `--r`: Robot plugin (e.g., `robot_plugin.py`)
+- `--d`: JSON configuration file
 
 ### Example:
 
-    python main.py --e environment_plugin.py --r robot_plugin.py --d data_file.json
-
-
-# Simulation and Output
+```bash
+python main.py --e environment_plugin.py --r robot_plugin.py --d data_file.json
+```
 
 ## Simulation Cycle
 
-The simulation proceeds as follows:
+Each simulation follows these steps:
 
-  - Generating maps and base station positions.
-  - Exploring positions based on blocked areas.
-  - Running the simulation for the duration specified in the JSON configuration.
+1. Map generation and base station placement
+2. Placement of blocked and isolated areas
+3. Continuous robot motion across the space
+4. Tile-based logging of robot presence
+5. Repeat across multiple cycles until completion
 
-The robot operates with limited autonomy per cycle, moving until exhausted, after which it recharges. The process repeats until the predefined number of cycles is completed.
+The robot has limited **autonomy** per cycle. Once exhausted, it recharges before resuming activity.
 
-## Output Files
+## Output
 
-The simulator generates multiple output files for analysis:
+### CSV Exports
 
-  - CSV Files:
-        Grid Representation: Displays the grid as a matrix, with each cell representing a tile type (e.g., blocked area, grass, isolated area, or opening).
-        Cycle Files: Contain the term cycle_i in the filename (i indicates the cycle number). These files track the number of robot passes over each tile.
-  - Histograms:
-        Show the distribution of tile crossings. The X-axis represents the number of crossings, and the Y-axis the number of tiles.
-  - Heatmaps:
-        Provide a visual representation of robot activity intensity across the grid, with colors indicating frequently and rarely traversed areas.
+- **Grid Representation**: Shows tile types across the grid.
+- **Cycle Files** (`cycle_i.csv`): Record how many times the robot passed over each tile in cycle *i*.
 
-If the terminal outputs a warning about an agent already occupying a tile, it can be ignored.
+### Visual Analysis
 
-By following these instructions, SMARTER can be properly configured and executed, producing detailed simulation results for analysis.
+- **Histograms**: Distribution of tile traversals (X = number of crossings, Y = number of tiles).
+- **Heatmaps**: Color-coded views of high and low traversal zones.
+
+> Note: Warnings in the terminal about agents occupying the same tile can be ignored.
+
+## Summary
+
+SMARTERS offers a flexible, powerful framework for simulating autonomous mowing robots in rich, user-defined environments. With support for continuous motion, discrete logging, customizable behaviors, and plugin-based extension, it enables detailed performance evaluation for research or development purposes.
