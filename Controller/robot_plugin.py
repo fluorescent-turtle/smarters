@@ -83,10 +83,6 @@ class DefaultMovementPlugin(MovementPlugin, ABC):
         if self.is_valid_real_pos(new_pos):
             discrete_pos = self.real_to_discrete(new_pos)
 
-            if discrete_pos == self.last_discrete_pos:
-                self.bounce(agent)
-                return
-
             if within_bounds(self.grid_width, self.grid_height, discrete_pos) and not contains_any_resource(
                     self.grid, discrete_pos, [CircledBlockedArea, SquaredBlockedArea], self.grid_width, self.grid_height
             ):
