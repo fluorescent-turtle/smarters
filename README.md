@@ -1,6 +1,6 @@
 ## Description
 
-Smarters is an advanced simulator for managing robots in environments represented as tile grids. It uses the Mesa framework for detailed visualization of interactions between agents and the environment. The simulator allows testing and evaluating robot performance in complex scenarios with blocked areas, isolated areas, and different bounce and cutting modes.
+SMARTER is an advanced simulator for managing robots in environments represented as tile grids. It uses the Mesa framework for detailed visualization of interactions between agents and the environment. The simulator allows testing and evaluating robot performance in complex scenarios with blocked areas, isolated areas, and different bounce and cutting modes.
 
 ## Environment Representation
 
@@ -47,7 +47,7 @@ The robot simulates cutting by moving across tiles and incrementing a counter. I
 ## JSON Configuration
 ### JSON Preparation
 
-To initialize Smarters, a JSON file is required with one of two possible structures:
+To initialize SMARTER, a JSON file is required with one of two possible structures:
 
   - Structure 1: A full configuration file, including robot settings, environment parameters, and simulation variables. This structure defines robot specifications (type, speed, cutting mode, etc.), grid dimensions, and simulation details such as tile size and cycle duration.
 
@@ -67,7 +67,7 @@ Ensure the View folder has write permissions and dependencies such as pandas, ma
 
 ## Plugins
 
-Smarters allows functionality extension through plugins, which must be Python files. Plugins are specified during runtime using the following flags:
+SMARTER allows functionality extension through plugins, which must be Python files. Plugins are specified during runtime using the following flags:
 
     --e: Environment plugin.
     --r: Robot plugin.
@@ -104,4 +104,4 @@ The simulator generates multiple output files for analysis:
 
 If the terminal outputs a warning about an agent already occupying a tile, it can be ignored.
 
-By following these instructions, Smarters can be properly configured and executed, producing detailed simulation results for analysis.
+By following these instructions, SMARTER can be properly configured and executed, producing detailed simulation results for analysis.
