@@ -11,7 +11,6 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License."""
-
 import cProfile
 import json
 import math
@@ -91,6 +90,7 @@ def perimeter_try_generating_base_station(grid_width, grid_height, base_station,
         :param height: int - Grid height.
         :return: Tuple (x, y) - Perimeter coordinates.
         """
+
         side = random.choice([0, 1])
         if side == 0:
             return 0, random.randint(0, width)
@@ -421,28 +421,28 @@ def draw_line(x1, y1, x2, y2, grid, grid_width, grid_height):
     return cells_to_add
 
 
-def draw_guideline_inside_isolated_area(grid, base_station, area_tassels, grid_width, grid_height, depth_percent=0.25):
+def draw_guideline_inside_isolated_area(grid, opening_center, area_tassels, grid_width, grid_height, depth_percent=1):
     """
     Force a guideline from the base station into the isolated area, ignoring cell contents.
 
     :param grid: The grid where the guideline will be applied.
-    :param base_station: Tuple (x, y) indicating the base station position.
+    :param opening_center: Tuple (x, y) indicating the opening_center position.
     :param area_tassels: List of (x, y) coordinates representing the isolated area.
     :param grid_width: Grid width.
     :param grid_height: Grid height.
-    :param depth_percent: How far into the area (towards the center) the guideline should go.
+    :param depth_percent: How far into the area (towards the center) the guideline should go, 1 = 100%.
     """
-    if not area_tassels or not base_station:
+    if not area_tassels or not opening_center:
         return
 
     # Compute center of the area
     area_x = [t[0] for t in area_tassels]
     area_y = [t[1] for t in area_tassels]
     center = (sum(area_x) // len(area_x), sum(area_y) // len(area_y))
-
+    # print(f"center of enclosed area {center[0]},{center[1]}")
     # Direction vector from base station to area center
-    dx = center[0] - base_station[0]
-    dy = center[1] - base_station[1]
+    dx = center[0] - opening_center[0]
+    dy = center[1] - opening_center[1]
     dist = math.sqrt(dx ** 2 + dy ** 2)
 
     # Normalize direction
@@ -453,12 +453,15 @@ def draw_guideline_inside_isolated_area(grid, base_station, area_tassels, grid_w
     # Steps to reach the desired depth
     steps = int(dist * depth_percent)
 
-    # Apply guideline step by step from the base station
-    for i in range(steps + 1):
-        x = int(round(base_station[0] + ux * i))
-        y = int(round(base_station[1] + uy * i))
+    # AK 12/05/2025
+    # Apply guideline step by step from the center of the opening in both directions
+    for i in range(2 * depth_percent * steps + 1):
+        x = int(round(opening_center[0] - ux * depth_percent * steps + ux * i))
+        y = int(round(opening_center[1] - uy * depth_percent * steps + uy * i))
+        #print(f"BS {round(opening_center[0])},{round(opening_center[1])}")
         if within_bounds(grid_width, grid_height, (x, y)):
             set_guideline_cell(x, y, grid, grid_width, grid_height)
+            print(f"Guide wire {x},{y}")
 
 
 def contains_resource(grid, cell, resource, grid_width, grid_height):
@@ -512,6 +515,7 @@ def set_guideline_cell(x, y, grid, grid_width, grid_height):
     blocked_areas = [CircledBlockedArea, SquaredBlockedArea]
 
     if not contains_any_resource(grid, (x, y), blocked_areas, grid_width, grid_height):
+        #print(f"This is a guide wire: {x},{y}")
         add_resource(grid, GuideLine((x, y)), x, y, grid_width, grid_height)
 
 
