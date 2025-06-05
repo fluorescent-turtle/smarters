@@ -178,8 +178,8 @@ def process_grid_data(
     df = df.rename(columns={j: j * dim_tassel for j in range(grid_height)})
 
     # Insert additional columns: map index, repetition index, and x coordinates
-    df.insert(0, "num_mappa", map_index)
-    df.insert(1, "ripetizione", repetition_index)
+    df.insert(0, "num_maps", map_index)
+    df.insert(1, "experiments", repetition_index)
     df.insert(2, "x", [dim_tassel * j for j in range(grid_width)])
 
     # Define the output directory and ensure it exists
@@ -253,8 +253,11 @@ def runner(
     process_grid_data(grid_height, grid_width, i, j, filename, dim_tassel, grid)
 
     current_data = []
+    # simulator = Simulator(grid, cycles, base_station_pos, plugin, data_r["speed"],
+    #                      (data_r["autonomy"] - (data_r["autonomy"] * (10 / 100))) * 60, i, j, current_data, filename,
+    #                      dim_tassel, recharge)
     simulator = Simulator(grid, cycles, base_station_pos, plugin, data_r["speed"],
-                          (data_r["autonomy"] - (data_r["autonomy"] * (10 / 100))) * 60, i, j, current_data, filename,
+                          (data_r["autonomy"] - 1) * 60, i, j, current_data, filename,
                           dim_tassel, recharge)
     simulator.step()
     cycle_data.append(current_data)
@@ -276,7 +279,7 @@ def run_model_with_parameters(env_plugins, robot_plugin, filename):
         exit()
     repetitions = data_s["repetitions"]
     num_maps = data_s["num_maps"]
-    cycles = data_s["cycle"] * 60  # Convert to seconds
+    cycles = (data_s["cycle"] - 1) * 60  # Convert to seconds, runs from 0 to operating_time - 1
     dim_tassel = data_s["dim_tassel"]
     created = False
     grid_width = math.ceil(data_e["width"] / dim_tassel)
@@ -314,12 +317,22 @@ def run_model_with_parameters(env_plugins, robot_plugin, filename):
         # Populate perimeter guidelines
         populate_perimeter_guidelines(grid_width, grid_height, grid)
 
+        # AK 12/05/2025
+        opening_area = data_e["opening"]
+        area_x = [t[0] for t in opening_area]
+        area_y = [t[1] for t in opening_area]
+        if (len(area_x) != 0) and (len(area_y) != 0):
+            opening_center = (sum(area_x) // len(area_x), sum(area_y) // len(area_y))
+        else:
+            opening_center = (0, 0)
+
         # Create copies of the grid for different strategies
         grids = [copy.deepcopy(grid) for _ in range(3)]
 
         for j in range(repetitions):
-            sample_base_station = 0, int(grid_width / 3)
-            draw_guideline_inside_isolated_area(grid, sample_base_station, isolated_area_tassels, grid_width,
+            # sample_base_station = 0, int(grid_width / 3)
+            sample_base_station = (292, 0)  # garden 292,0
+            draw_guideline_inside_isolated_area(grid, opening_center, isolated_area_tassels, grid_width,
                                                 grid_height)
             # Run the experiment with the specified strategy.
             runner(robot_plugin, grids[0], cycles, sample_base_station, data_r, grid_width, grid_height, i, j,
